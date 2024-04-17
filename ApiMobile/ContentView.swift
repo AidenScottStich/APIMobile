@@ -6,91 +6,85 @@
 //
 
 import SwiftUI
-
+import Foundation
 //indivisual User from the json
 struct User: Codable {
-    public var login: String
-    public var url: String
-    public var avatar_url:String
-    public var html_url: String
+    public var username: String
+    public var id: String
+    public var avatar:String
+    
 }
+struct PlayerResponse: Codable {
+    let code: String
+    let message: String
+    let data: PlayerData
+    let success: Bool
+}
+
+struct PlayerData: Codable {
+    let player: Player
+}
+
+struct Player: Codable {
+    let username: String
+    let id: String
+    let raw_id: String
+    let avatar: String
+    let skin_texture: String
+    let name_history: [String]
+}
+
+
+
 // the items array from the JSON
 struct Result: Codable {
-    var items:[User]
+    var items:User
 }
 
 struct ContentView: View {
-    @State var users:[User] = []
+    @State var username = ""
+    @State var id = ""
+    @State var avatar = ""
     @State var searchText = ""
     var body: some View {
         VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
-            NavigationStack{
-                if users.count == 0 && !searchText.isEmpty{
-                    //display a progress spinning wheel if no data has been pulled yet
-                    VStack{
-                        ProgressView().padding()
-                        Text("Fetching Users...")
-                            .foregroundStyle(Color.purple)
-                            .onAppear{
-                                getApiData()
-                            }
-                    }
-                } else {
-                    // bind the list to the User array
-                    List(users, id:\.login) {user in
-                        // links to their github profile using Safari
-                        Link(destination:URL(string:user.html_url)!){
-                            
-                            
-                            // diplay the image
-                            HStack(alignment:.top){
-                                AsyncImage(url:URL(string: user.avatar_url)){ response in
-                                    switch response {
-                                    case .success(let image):
-                                        image.resizable()
-                                            .frame(width:50, height: 50)
-                                    default:
-                                        Image(systemName:"nosign")
-                                    }
-                                }
-                            }
-                            
-                            // display the user info
-                            VStack(alignment: .leading){
-                                Text(user.login)
-                                Text("\(user.url)")
-                                    .font(.system(size:11))
-                                    .foregroundColor(Color.gray)
-                            }
-                        }
-                    }
-                }
-            }.searchable(text: $searchText).onSubmit(of: .search){
-                getApiData()
+            Text("test")
+            Button(action: {
+                fetchPlayerData()
+                print("button is clicked")
+            }, label: {
+                Text("Button")
+            })
+            
+            if(username != ""){
+                Text(username)
+            }else{
+                Text("not working")
             }
+            
         }
         .padding()
     }
-    
-    func getApiData(){
-        if let apiURL = URL(string:"https://api.github.com/search/users?q="+searchText){
-            var request = URLRequest(url:apiURL)
-            request.httpMethod = "GET"
-            URLSession.shared.dataTask(with: request){
-                data, response,error in
-                if let userData = data {
-                    if let usersFromAPI = try? JSONDecoder().decode(Result.self, from: userData){
-                        users = usersFromAPI.items
-                        print(users)
+    func fetchPlayerData() {
+        if let url = URL(string: "https://playerdb.co/api/player/minecraft/jeff") {
+            URLSession.shared.dataTask(with: url) { data, response, error in
+                if let jsonData = data {
+                    do {
+                        let decoder = JSONDecoder()
+                        let playerResponse = try decoder.decode(PlayerResponse.self, from: jsonData)
+                        // Now you have access to playerResponse and its properties
+                        print(playerResponse.data.player.username)
+                        // You can access other properties similarly
+                    } catch {
+                        print("Error decoding JSON: \(error)")
                     }
                 }
             }.resume()
         }
     }
+
+    
+    
 }
 
 
